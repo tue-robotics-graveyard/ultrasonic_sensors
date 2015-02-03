@@ -1,119 +1,79 @@
-#!/usr/bin/env python
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Start up ROS pieces.
+PKG = 'ultrasonic_sensors'
+import roslib; roslib.load_manifest(PKG)
 import rospy
-import roslib; #roslib.load_manifest('pico_base_controller')
-import serial
-#from geometry_msgs.msg import Quaternion
-#from geometry_msgs.msg import Twist
-#from geometry_msgs.msg import Pose
-#from nav_msgs.msg import Odometry
-#from math import sin, cos
-import re
-#from tf.broadcaster import TransformBroadcaster
 import tf
-from tf.transformations import vector_norm
-from tf.transformations import numpy as np
 
-class read_sensors():
-	regex = re.compile('(-?\d+\.\d+) (-?\d+\.\d+) (-?\d+\.\d+)')
-	ser = serial.Serial('/dev/ttyArduino0', 115200)
-	max_speed_linear  = 0.2
-	max_speed_angular = 1.0
-	max_speed_error = 0.01 # speed may be 1% greater than the maximum
+# ROS messages.
+from std_msgs.msg import Float32MultiArray
+from sensor_msgs.msg import Range
 
-	def velocityCallback(self, vel):
-		# cap linear speed
-		l = vel.linear
-		v = np.array([l.x, l.y, l.z])
-		speed = vector_norm(v)
-		if speed > self.max_speed_linear * (1 + self.max_speed_error):
-			rospy.logwarn('maximum linear speed exceeded with %f m/s, capping to %f m/s' % (speed, self.max_speed_linear))
-			v = v / speed * self.max_speed_linear
-
-		# cap angular speed
-		a = vel.angular.z
-		if np.abs(a) > self.max_speed_angular * (1+ self.max_speed_error):
-			rospy.logwarn('maximum angular speed exceeded with %f rad/s, capping to %f rad/s' % (a, self.max_speed_angular))
-			a = a / abs(a) * self.max_speed_angular
-
-		self.ser.write("<%f,%f,%f>\n"%(v[0], v[1], a))
-
+class ReadSensors():
 	def __init__(self):
-		rospy.init_node("omni_base");
+		self.got_new_msg = False
+		self.range_msg1 = Range()
+		self.range_msg2 = Range()
+		self.range_msg3 = Range()
+		self.range_msg4 = Range()
+		self.range_msg1.min_range = 0.02
+		self.range_msg1.max_range = 1.0
+		self.range_msg1.radiation_type = self.range_msg1.ULTRASOUND
+		self.range_msg1.field_of_view = 0.7; # 40 degrees
+		self.range_msg1.header.frame_id = "/sergio/base_sonar1";
+		self.range_msg2.min_range = 0.02
+		self.range_msg2.max_range = 1.0
+		self.range_msg2.radiation_type = self.range_msg1.ULTRASOUND
+		self.range_msg2.field_of_view = 0.7; # 40 degrees
+		self.range_msg2.header.frame_id = "/sergio/base_sonar2";
+		self.range_msg3.min_range = 0.02
+		self.range_msg3.max_range = 1.0
+		self.range_msg3.radiation_type = self.range_msg1.ULTRASOUND
+		self.range_msg3.field_of_view = 0.7; # 40 degrees
+		self.range_msg3.header.frame_id = "/sergio/base_sonar3";
+		self.range_msg4.min_range = 0.02
+		self.range_msg4.max_range = 1.0
+		self.range_msg4.radiation_type = self.range_msg1.ULTRASOUND
+		self.range_msg4.field_of_view = 0.7; # 40 degrees
+		self.range_msg4.header.frame_id = "/sergio/base_sonar4";
+		
+		# Create subscribers and publishers.
+		sub_ultrasone = rospy.Subscriber("ultrasonic", Float32MultiArray, self.ultrasone_callback)
+		pub_sonar1 = rospy.Publisher("sonar1", Range)
+		pub_sonar2 = rospy.Publisher("sonar2", Range)
+		pub_sonar3 = rospy.Publisher("sonar3", Range)
+		pub_sonar4 = rospy.Publisher("sonar4", Range)
 
-		rospy.Subscriber("cmd_vel", Twist, self.velocityCallback)
-		r = rospy.Rate(200.0) # 200hz
-
-		odomPub = rospy.Publisher('/pico/odom', Odometry)
-		odomBroadcaster = tf.TransformBroadcaster()
-		#print "vel callback"
-		now = rospy.Time.now()
-		x = 0.0
-		y = 0.0
-		th = 0.0
-		x_robot_last = 0.0
-		x_robot = 0.0
-		y_robot_last = 0.0
-		y_robot = 0.0
-		th_robot_last = 0.0
-		th_robot = 0.0
-
+		# Main while loop.
 		while not rospy.is_shutdown():
-			just = now
-			now = rospy.Time.now()
-			dt = (now - just).to_sec()
-			#print dt
-			s = self.ser.readline()
-			result = self.regex.match(s)
-			if result and dt > 0.0:
-				x_robot_last = x_robot
-				y_robot_last = y_robot
-				th_robot_last = th_robot
-				
-				x_robot = float(result.group(1))
-				y_robot = float(result.group(2))
-				th_robot = float(result.group(3))
-				
-				vx = (x_robot - x_robot_last)/dt
-				vy = (y_robot - y_robot_last)/dt
-				vth = (th_robot - th_robot_last)/dt
-				
-				dx = (vx * cos(th) - vy * sin(th)) * dt;
-				dy = (vx * sin(th) + vy * cos(th)) * dt;
-				dth = vth * dt;
+			# Publish new data if we got a new message.
+			if self.got_new_msg:
+				pub_sonar1.publish(self.range_msg1)
+				pub_sonar2.publish(self.range_msg2)
+				pub_sonar3.publish(self.range_msg3)
+				pub_sonar4.publish(self.range_msg4)
+				self.got_new_msg = False
 
-				x += dx;
-				y += dy;
-				th += dth;
+	# Ultrasone callback function.
+	def ultrasone_callback(self, msg):
+		# Get ranges.
+		self.range_msg1.range = msg.data[0]
+		self.range_msg2.range = msg.data[1]
+		self.range_msg3.range = msg.data[2]
+		self.range_msg4.range = msg.data[3]
+		self.range_msg1.header.stamp = rospy.get_rostime()
+		self.range_msg2.header.stamp = rospy.get_rostime()
+		self.range_msg3.header.stamp = rospy.get_rostime()
+		self.range_msg4.header.stamp = rospy.get_rostime()
+		self.got_new_msg = True
 
-				q = tf.transformations.quaternion_from_euler(0.0, 0.0, th)
-				quaternion = Quaternion(q[0], q[1], q[2], q[3])
-			
-				# Create the odometry transform frame broadcaster.
-				odomBroadcaster.sendTransform(
-					(x, y, 0.0), 
-					(q[0], q[1], q[2], q[3]),
-					now,
-					"/pico/base_link",
-					"/pico/odom"
-					)
-			
-				odom = Odometry()
-				odom.header.frame_id = "/pico/odom"
-				odom.child_frame_id = "/pico/base_link"
-				odom.header.stamp = now
-				odom.pose.pose.position.x = x
-				odom.pose.pose.position.y = y
-				odom.pose.pose.position.z = 0.0
-				odom.pose.pose.orientation = quaternion
-				odom.twist.twist.linear.x = vx
-				odom.twist.twist.linear.y = vy
-				odom.twist.twist.angular.z = vth
-				#print 'odom: %f %f %f' % (x, y, th)
-				#print odom
-				odomPub.publish(odom)
-			r.sleep()
-
+# Main function.
 if __name__ == '__main__':
+	# Initialize the node and name it.
+	rospy.init_node('read_sensors')
+	# Go to class functions that do all the heavy lifting. Do error checking.
 	try:
-		read_sensors()
+		read_sensors = ReadSensors()
 	except rospy.ROSInterruptException: pass
