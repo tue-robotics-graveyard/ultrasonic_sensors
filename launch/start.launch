@@ -7,6 +7,7 @@
   
   <!-- Launch node to translate multiarray to range message -->
   <node pkg="ultrasonic_sensors" type="read_sensors.py" name="ultrasone_range_msgs">
+	<param name="rate" value="11.0"/>
     <remap from="ultrasonic" to="/sergio/ultrasonic_sensors"/>
     <remap from="sonar1" to="/sergio/sonar1"/>
     <remap from="sonar2" to="/sergio/sonar2"/>
