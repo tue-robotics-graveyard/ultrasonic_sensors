@@ -63,21 +63,21 @@ class ReadSensors():
 				self.range_msg4.header.stamp = rospy.get_rostime()
 				pub_sonar4.publish(self.range_msg4)
 				self.got_new_msg = False
-			else:
-				self.range_msg1.header.stamp = rospy.get_rostime()
-				pub_sonar1.publish(self.range_msg1)
-				self.range_msg2.header.stamp = rospy.get_rostime()
-				pub_sonar2.publish(self.range_msg2)
-				self.range_msg3.header.stamp = rospy.get_rostime()
-				pub_sonar3.publish(self.range_msg3)
-				self.range_msg4.header.stamp = rospy.get_rostime()
-				pub_sonar4.publish(self.range_msg4)
-			
+			#else:
+			#	self.range_msg1.header.stamp = rospy.get_rostime()
+			#	pub_sonar1.publish(self.range_msg1)
+			#	self.range_msg2.header.stamp = rospy.get_rostime()
+			#	pub_sonar2.publish(self.range_msg2)
+			#	self.range_msg3.header.stamp = rospy.get_rostime()
+			#	pub_sonar3.publish(self.range_msg3)
+			#	self.range_msg4.header.stamp = rospy.get_rostime()
+			#	pub_sonar4.publish(self.range_msg4)
+			#
 			# Sleep for a while before publishing new messages. Division is so rate != period.
-			if rate:
-				rospy.sleep(1/rate)
-			else:
-				rospy.sleep(1.0)
+			#if rate:
+			#	rospy.sleep(1/rate)
+			#else:
+			#	rospy.sleep(1.0)
 
 	# Ultrasone callback function.
 	def ultrasone_callback(self, msg):

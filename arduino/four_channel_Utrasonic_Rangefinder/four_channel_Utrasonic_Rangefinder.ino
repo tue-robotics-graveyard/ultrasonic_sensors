@@ -27,8 +27,8 @@ ros::NodeHandle  nh;
 
 std_msgs::Float32MultiArray float_array_msg;
 ros::Publisher ultrasonic( "ultrasonic", &float_array_msg);
-sensor_msgs::Range range_msg;
-ros::Publisher pub_range( "range_data", &range_msg);
+//sensor_msgs::Range range_msg;
+//ros::Publisher pub_range( "range_data", &range_msg);
 
 char frameid[] = "/us_ranger";
 
@@ -53,13 +53,13 @@ void setup() {
   nh.advertise(ultrasonic);
   
   // range message
-  nh.advertise(pub_range);
+  //nh.advertise(pub_range);
   
-  range_msg.radiation_type = sensor_msgs::Range::ULTRASOUND;
-  range_msg.header.frame_id =  frameid;
-  range_msg.field_of_view = 0.01; // to be checked!!!
-  range_msg.min_range = 0.2; // 0.2 from datasheet
-  range_msg.max_range = 2.9; // 3.0 from datasheet
+  //range_msg.radiation_type = sensor_msgs::Range::ULTRASOUND;
+  //range_msg.header.frame_id =  frameid;
+  //range_msg.field_of_view = 0.01; // to be checked!!!
+  //range_msg.min_range = 0.2; // 0.2 from datasheet
+  //range_msg.max_range = 2.9; // 3.0 from datasheet
   
 }
 
@@ -142,9 +142,9 @@ void loop()
   //Publish to ros
   ultrasonic.publish(&float_array_msg);
   
-  range_msg.range = cm;
-  range_msg.header.stamp = nh.now();
-  pub_range.publish(&range_msg);
+  //range_msg.range = cm;
+  //range_msg.header.stamp = nh.now();
+  //pub_range.publish(&range_msg);
     
   nh.spinOnce();
  
